@@ -1,0 +1,282 @@
+
+
+답변 글 로직
+
+[메소드. insertArticle]
+
+    public void insertArticle(BoardDataBean article) throws Exception {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+      ResultSet rs = null;
+                
+int num=article.getNum(); //일반 글 번호
+int ref=article.getRef(); //일반 답변 묶기
+int re_step=article.getRe_step(); //상속 단계
+int re_level=article.getRe_level();
+int number=0;
+                String sql="";
+
+        try {
+            conn = getConnection();
+
+            pstmt = conn.prepareStatement("select max(num) from board");
+    rs = pstmt.executeQuery();
+
+    if (rs.next())
+      number=rs.getInt(1)+1;
+    else
+      number=1;
+  
+    if (num!=0)   //
+    { 
+      sql="update board set re_step=re_step+1 where ref= ? and re_step> ?";
+      pstmt = conn.prepareStatement(sql);
+      pstmt.setInt(1, ref);
+      pstmt.setInt(2, re_step);
+      pstmt.executeUpdate();
+      re_step=re_step+1;
+      re_level=re_level+1;
+    }else{
+              ref=number;
+      re_step=0;
+      re_level=0;
+    }
+            // 쿼리를 작성
+            sql = "insert into board(num,writer,email,subject,passwd,reg_date,";
+    sql+="ref,re_step,re_level,content,ip) values(board_num.NEXTVAL,?,?,?,?,?,?,?,?,?,?)";
+
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, article.getWriter());
+            pstmt.setString(2, article.getEmail());
+            pstmt.setString(3, article.getSubject());
+            pstmt.setString(4, article.getPasswd());
+    pstmt.setTimestamp(5, article.getReg_date());
+            pstmt.setInt(6, ref);
+            pstmt.setInt(7, re_step);
+            pstmt.setInt(8, re_level);
+    pstmt.setString(9, article.getContent());
+    pstmt.setString(10, article.getIp());
+
+            pstmt.executeUpdate();
+        } catch(Exception ex) {
+            ex.printStackTrace();
+        } finally {
+    if (rs != null) try { rs.close(); } catch(SQLException ex) {}
+            if (pstmt != null) try { pstmt.close(); } catch(SQLException ex) {}
+            if (conn != null) try { conn.close(); } catch(SQLException ex) {}
+        }
+    }
+   
+   
+  //read.jsp : DB로부터 한줄의 데이터를 가져온다.
+  
+    public BoardDataBean getArticle(int num) throws Exception {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        BoardDataBean article=null;
+        try {
+            conn = getConnection();
+
+            pstmt = conn.prepareStatement(
+            "update board set readcount=readcount+1 where num = ?");
+            pstmt.setInt(1, num);
+    pstmt.executeUpdate();
+
+            pstmt = conn.prepareStatement(
+            "select * from board where num = ?");
+            pstmt.setInt(1, num);
+            rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                article = new BoardDataBean();
+                article.setNum(rs.getInt("num"));
+article.setWriter(rs.getString("writer"));
+                article.setEmail(rs.getString("email"));
+                article.setSubject(rs.getString("subject"));
+                article.setPasswd(rs.getString("passwd"));
+        article.setReg_date(rs.getTimestamp("reg_date"));
+article.setReadcount(rs.getInt("readcount"));
+                article.setRef(rs.getInt("ref"));
+                article.setRe_step(rs.getInt("re_step"));
+article.setRe_level(rs.getInt("re_level"));
+                article.setContent(rs.getString("content"));
+        article.setIp(rs.getString("ip"));    
+}
+        } catch(Exception ex) {
+            ex.printStackTrace();
+        } finally {
+            if (rs != null) try { rs.close(); } catch(SQLException ex) {}
+            if (pstmt != null) try { pstmt.close(); } catch(SQLException ex) {}
+            if (conn != null) try { conn.close(); } catch(SQLException ex) {}
+        }
+return article;
+    }
+
+
+[writeForm.jsp]
+<%@ page contentType="text/html; charset=euc-kr" %>
+<%@ include file="../view/color.jsp"%>
+<html>
+<head>
+<title>게시판</title>
+<link href="style.css" rel="stylesheet" type="text/css">
+<script language="JavaScript" src="script.js"></script>
+</head>
+
+<%
+  int num=0,ref=1,re_step=0,re_level=0;
+  try{ 
+    if(request.getParameter("num")!=null){
+num=Integer.parseInt(request.getParameter("num"));
+ref=Integer.parseInt(request.getParameter("ref"));
+re_step=Integer.parseInt(request.getParameter("re_step"));
+re_level=Integer.parseInt(request.getParameter("re_level"));
+}
+%>
+  
+<body bgcolor="<%=bodyback_c%>"> 
+<center><b>글쓰기</b>
+<br>
+<form method="post" name="writeform" action="writePro.jsp" onsubmit="return writeSave()">
+<input type="hidden" name="num" value="<%=num%>">
+<input type="hidden" name="ref" value="<%=ref%>">
+<input type="hidden" name="re_step" value="<%=re_step%>">
+<input type="hidden" name="re_level" value="<%=re_level%>">
+
+<table width="400" border="1" cellspacing="0" cellpadding="0"  bgcolor="<%=bodyback_c%>"
+   align="center">
+   <tr>
+    <td align="right" colspan="2" bgcolor="<%=value_c%>">
+    <a href="list.jsp"> 글목록</a>
+   </td>
+   </tr>
+   <tr>
+    <td  width="70"  bgcolor="<%=value_c%>" align="center">이 름</td>
+    <td  width="330">
+       <input type="text" size="10" maxlength="10" name="writer"></td>
+  </tr>
+  <tr>
+    <td  width="70"  bgcolor="<%=value_c%>" align="center" >제 목</td>
+    <td  width="330">
+    <%if(request.getParameter("num")==null){%>
+       <input type="text" size="40" maxlength="50" name="subject"></td>
+<%}else{%>
+   <input type="text" size="40" maxlength="50" name="subject" value="[답변]"></td>
+<%}%>
+  </tr>
+  <tr>
+    <td  width="70"  bgcolor="<%=value_c%>" align="center">Email</td>
+    <td  width="330">
+       <input type="text" size="40" maxlength="30" name="email" ></td>
+  </tr>
+  <tr>
+    <td  width="70"  bgcolor="<%=value_c%>" align="center" >내 용</td>
+    <td  width="330" >
+     <textarea name="content" rows="13" cols="40"></textarea> </td>
+  </tr>
+  <tr>
+    <td  width="70"  bgcolor="<%=value_c%>" align="center" >비밀번호</td>
+    <td  width="330" >
+     <input type="password" size="8" maxlength="12" name="passwd">
+</td>
+  </tr>
+<tr>     
+<td colspan=2 bgcolor="<%=value_c%>" align="center">
+  <input type="submit" value="글쓰기" > 
+  <input type="reset" value="다시작성">
+  <input type="button" value="목록보기" OnClick="window.location='list.jsp'">
+</td></tr></table>   
+<%
+  }catch(Exception e){}
+%>    
+</form>     
+</body>
+</html>     
+
+[content.jsp]
+<%@ page contentType = "text/html; charset=euc-kr" %>
+<%@ page import = "soldesk.board.BoardDBBean" %>
+<%@ page import = "soldesk.board.BoardDataBean" %>
+<%@ page import = "java.text.SimpleDateFormat" %>
+<%@ include file="../view/color.jsp"%>
+<html>
+<head>
+<title>게시판</title>
+<link href="style.css" rel="stylesheet" type="text/css">
+</head>
+
+<%
+   int num = Integer.parseInt(request.getParameter("num"));
+   String pageNum = request.getParameter("pageNum");
+
+   SimpleDateFormat sdf =
+        new SimpleDateFormat("yyyy-MM-dd HH:mm");
+
+   try{
+      BoardDBBean dbPro = BoardDBBean.getInstance();
+      BoardDataBean article =  dbPro.getArticle(num);
+ 
+  int ref=article.getRef();
+  int re_step=article.getRe_step();
+  int re_level=article.getRe_level();
+%>
+<body bgcolor="<%=bodyback_c%>"> 
+<center><b>글내용 보기</b>
+<br>
+<form>
+<table width="500" border="1" cellspacing="0" cellpadding="0" 
+  bgcolor="<%=bodyback_c%>" align="center"> 
+  <tr height="30">
+    <td align="center" width="125" bgcolor="<%=value_c%>">글번호</td>
+    <td align="center" width="125" align="center">
+     <%=article.getNum()%></td>
+    <td align="center" width="125" bgcolor="<%=value_c%>">조회수</td>
+    <td align="center" width="125" align="center">
+     <%=article.getReadcount()%></td>
+  </tr>
+  <tr height="30">
+    <td align="center" width="125" bgcolor="<%=value_c%>">작성자</td>
+    <td align="center" width="125" align="center">
+     <%=article.getWriter()%></td>
+    <td align="center" width="125" bgcolor="<%=value_c%>" >작성일</td>
+    <td align="center" width="125" align="center">
+     <%= sdf.format(article.getReg_date())%></td>
+  </tr>
+  <tr height="30">
+    <td align="center" width="125" bgcolor="<%=value_c%>">글제목</td>
+    <td align="center" width="375" align="center" colspan="3">
+     <%=article.getSubject()%></td>
+  </tr>
+  <tr>
+    <td align="center
+width="125" bgcolor="<%=value_c%>">글내용</td>
+    <td align="left" width="375" colspan="3"><pre><%=article.getContent()%></pre></td>
+  </tr>
+  
+  
+  <tr height="30">     
+    <td colspan="4" bgcolor="<%=value_c%>" align="right" >
+  <input type="button" value="글수정"
+       onclick="document.location.href='updateForm.jsp?num=<%=article.getNum()%>&pageNum=<%=pageNum%>'">
+   &nbsp;&nbsp;&nbsp;&nbsp;
+
+  <input type="button" value="글삭제"
+       onclick="document.location.href='deleteForm.jsp?num=<%=article.getNum()%>&pageNum=<%=pageNum%>'">
+   &nbsp;&nbsp;&nbsp;&nbsp;
+
+      <input type="button" value="답글쓰기"
+       onclick="document.location.href='writeForm.jsp?num=<%=num%>&ref=<%=ref%>&re_step=<%=re_step%>&re_level=<%=re_level%>'">
+   &nbsp;&nbsp;&nbsp;&nbsp;
+
+       <input type="button" value="글목록"
+       onclick="document.location.href='list.jsp?pageNum=<%=pageNum%>'">
+    </td>
+  </tr>
+</table>   
+<%
+}catch(Exception e){}
+%>
+</form>     
+</body>
+</html>     
