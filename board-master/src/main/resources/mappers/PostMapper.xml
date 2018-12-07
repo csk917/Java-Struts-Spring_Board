@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+	
+<mapper namespace="com.sj.mapper.PostMapper">
+
+	<resultMap type="com.sj.vo.PostVO" id="postResultMap">
+		<id property="postId" column="post_id"/>
+		<result property="userId" column="user_id"/>
+		<result property="postRegdate" column="post_regdate"/>
+		<result property="postUpdatedate" column="post_updatedate"/>
+		<result property="title" column="title"/>
+		<result property="postContent" column="post_content"/>
+		<result property="filename" column="filename"/>
+		<result property="postHeart" column="post_heart"/>
+		<result property="postReplycount" column="post_replycount"/>
+		<result property="postFlag" column="post_flag"/>
+	</resultMap>
+	
+	
+	<insert id="create" useGeneratedKeys="true" keyProperty="post_id">
+		INSERT INTO
+			board.post (post_id, user_id, post_regdate, post_updatedate, title, post_content, filename, post_heart, post_replycount, post_flag)
+		VALUES
+			(LAST_INSERT_ID(), #{userId}, #{postRegdate}, #{postUpdatedate}, #{title}, #{postContent}, #{filename}, #{postHeart}, #{postReplycount}, #{postFlag})
+	</insert>
+
+	<select id="read" resultMap="postResultMap">
+		SELECT
+			*
+		FROM
+			board.post
+		WHERE
+			post_id = #{postId}
+	</select>
+	
+	<select id="readAll" resultMap="postResultMap">
+		SELECT
+			*
+		FROM
+			board.post
+		ORDER BY
+			post_regdate DESC
+	</select>
+	
+	<select id="read5Posts" resultMap="postResultMap">
+		SELECT
+			*
+		FROM
+			board.post
+		WHERE
+			post_flag = "Y"
+		ORDER BY
+			post_regdate DESC
+		LIMIT
+			#{pageNum}, 5
+	</select>
+	
+	<select id="readMy5Posts" parameterType="map" resultMap="postResultMap">
+		SELECT
+			*
+		FROM
+			board.post
+		WHERE
+			user_id = #{userId} AND post_flag = "Y"
+		ORDER BY
+			post_regdate DESC
+		LIMIT
+			#{pageNum}, 5
+	</select>
+	
+	<select id="readPostReplycount" resultType="java.lang.Integer">
+		SELECT
+			post_replycount AS postReplyocunt
+		FROM
+			board.post
+		WHERE
+			post_id = #{postId}
+	</select>
+	
+	<select id="readPostHeart" resultType="java.lang.Integer">
+		SELECT
+			post_heart AS postHeart
+		FROM
+			board.post
+		WHERE
+			post_id = #{postId}
+	</select>
+	
+	<update id="update">
+		UPDATE
+			board.post
+		SET
+			title = #{title}, post_content = #{postContent}, post_updatedate = #{postUpdatedate}, filename = #{filename}, post_flag = #{postFlag}
+		WHERE
+			post_id = #{postId}
+	</update>
+	
+	<update id="updateReplycountInc">
+		UPDATE
+			board.post
+		SET
+			post_replycount = post_replycount + 1
+		WHERE
+			post_id = #{postId}
+	</update>
+	<update id="updateReplycountDec">
+		UPDATE
+			board.post
+		SET
+			post_replycount = post_replycount - 1
+		WHERE
+			post_id = #{postId}
+	</update>
+	
+	<update id="updateHeartInc">
+		UPDATE
+			board.post
+		SET
+			post_heart = post_heart + 1
+		WHERE
+			post_id = #{postId}
+	</update>
+	<update id="updateHeartDec">
+		UPDATE
+			board.post
+		SET
+			post_heart = post_heart - 1
+		WHERE
+			post_id = #{postId}
+	</update>
+	
+	<delete id="delete">
+		DELETE FROM
+			board.post
+		WHERE
+			post_id = #{postId}
+	</delete>
+
+</mapper>

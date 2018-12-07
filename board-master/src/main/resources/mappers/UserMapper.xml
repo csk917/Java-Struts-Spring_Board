@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+	
+<mapper namespace="com.sj.mapper.UserMapper">
+
+	<resultMap type="com.sj.vo.UserVO" id="userResultMap">
+		<id property="userId" column="user_id"/>
+		<result property="userPw" column="user_pw"/>
+		<result property="userName" column="uesr_name"/>
+		<result property="email" column="email"/>
+		<result property="userRegdate" column="user_regdate"/>
+		<result property="userFlag" column="user_flag"/>
+	</resultMap>
+	
+	<insert id="create">
+		INSERT INTO
+			board.user (user_id, user_pw, user_name, email, user_regdate, user_flag)
+		VALUES
+			(#{userId}, #{userPw}, #{userName}, #{email}, #{userRegdate}, #{userFlag})
+	</insert>
+
+	<select id="read" resultMap="userResultMap">
+		SELECT
+			*
+		FROM
+			board.user
+		WHERE
+			user_id = #{userId}
+	</select>
+		
+	<select id="readAll" resultMap="userResultMap">
+		SELECT
+			*
+		FROM
+			board.user
+	</select>
+	
+	<update id="update">
+		UPDATE
+			user
+		SET
+			user_pw = #{userPw}, user_name = #{userName}, email = #{email}, user_flag = #{userFlag}
+		WHERE
+			user_id = #{userId}
+	</update>
+	
+	<delete id="delete">
+		DELETE FROM
+			board.user
+		WHERE
+			user_id = #{userId}
+	</delete>
+
+	<select id="login" resultMap="userResultMap">
+		SELECT
+			*
+		FROM
+			board.user
+		WHERE
+			user_id = #{userId} AND user_pw = #{userPw}
+	</select>
+
+</mapper>

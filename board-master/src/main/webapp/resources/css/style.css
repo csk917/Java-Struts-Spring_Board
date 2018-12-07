@@ -1,0 +1,88 @@
+@charset "UTF-8";
+
+@font-face
+{
+	font-family: NanumGothic;
+	src:url(NanumGothic.eot);
+	src:local(※), url(NanumGothic.woff) format(‘woff’)
+}
+
+.head
+{
+	background-color: #b2ebf4;
+	border-radius: 20px;
+	font-family: '나눔고딕', 'NanumGothic', NanumGothic
+}
+
+.body
+{
+	position: absolute; 
+	left: 50%;
+	transform: translate(-50%, 0%);
+	border-radius: 20px;
+	font-family: '나눔고딕', 'NanumGothic', NanumGothic
+}
+
+.bg
+{
+	font-family: '나눔고딕', 'NanumGothic', NanumGothic
+}
+
+table
+{
+	background-color: #eaeaea;
+	border: none;
+	border-radius: 20px;
+	font-family: '나눔고딕', 'NanumGothic', NanumGothic
+}
+
+.headbutton
+{
+	width: 100px;
+    background-color: #747474;
+    border: none;
+    color: #ffffff;
+    padding: 10px 0;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 13px;
+    margin: 4px;
+    cursor: pointer;
+    border-radius: 10px;
+    font-family: '나눔고딕', 'NanumGothic', NanumGothic
+}
+
+.bodybutton
+{
+	width: 70px;
+    background-color: #747474;
+    border: none;
+    color: #ffffff;
+    padding: 7px 0;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 10px;
+    margin: 4px;
+    cursor: pointer;
+    border-radius: 10px;
+    font-family: '나눔고딕', 'NanumGothic', NanumGothic
+}
+
+.smallbutton
+{
+	width: 50px;
+    background-color: #747474;
+    border: none;
+    color: #ffffff;
+    padding: 5px 0;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 9px;
+    margin: 4px;
+    cursor: pointer;
+    border-radius: 10px;
+   font-family: '나눔고딕', 'NanumGothic', NanumGothic
+}
