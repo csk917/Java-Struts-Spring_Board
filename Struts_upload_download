@@ -1,0 +1,865 @@
+***Struts2를 이용한 FileUpload***
+1.FileUpload Basic
+[struts.xml]
+<package name="file" extends="struts-default">
+	<action name="fileUploadForm" class="file.fileUploadAction">
+		<result>/upload/fileUpload.jsp</result>
+	</action>
+
+	<action name="fileUploadAction" class="file.fileUploadAction" method="upload">
+		<result name="input">/upload/fileUpload.jsp</result>
+		<result>/upload/fileUploadOK.jsp</result>
+	</action>
+</package>
+
+[fileUploadAction.java]
+package file;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import org.apache.commons.io.FileUtils;
+import com.opensymphony.xwork2.ActionSupport;
+
+public class fileUploadAction extends ActionSupport {
+
+	private File upload;
+	private String uploadContentType;
+	private String uploadFileName;
+	private String fileUploadPath = "C:\\Java\\upload\\";
+
+	public String upload() throws Exception {
+		return SUCCESS;
+	}
+
+	public File getUpload() {
+		return upload;
+	}
+
+	public void setUpload(File upload) {
+		this.upload = upload;
+	}
+
+	public String getUploadContentType() {
+		return uploadContentType;
+	}
+
+	public void setUploadContentType(String uploadContentType) {
+		this.uploadContentType = uploadContentType;
+	}
+
+	public String getUploadFileName() {
+		return uploadFileName;
+	}
+
+	public void setUploadFileName(String uploadFileName) {
+		this.uploadFileName = uploadFileName;
+	}	
+}
+
+[fileUpload.jsp]
+<%@ page language="java" contentType="text/html; charset=UTF-8" %>
+<%@ taglib prefix="s" uri="/struts-tags" %>
+
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>파일 업로드</title>
+</head>
+
+<body>
+  <h2>단일 파일 업로드 입력 폼</h2>
+
+    <s:form action="fileUploadAction" method="POST" enctype="multipart/form-data">
+        <s:file name="upload" label="File"/>
+        <s:submit />
+    </s:form>
+</body>
+</html>
+
+[fileUploadOK.jsp]
+<%@ page language="java" contentType="text/html; charset=UTF-8" %>
+<%@ taglib prefix="s" uri="/struts-tags" %>
+
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>파일 업로드</title>
+</head>
+
+<body>
+	<h2>단일 파일 업로드 입력 완료</h2>
+
+	<p>
+	  <ul>
+	    <li>ContentType: <s:property value="uploadContentType" /></li>
+	    <li>FileName: <s:property value="uploadFileName" /></li>
+	    <li>File: <s:property value="upload" /></li>
+	  </ul>
+	</p>
+
+</body>
+</html>
+
+====================================================
+
+2.fileUpload 응용
+ : FileUtils의 copyFile()
+ : FileInputStream, FileOutputStream
+
+[fileUploadAction.java]
+package file;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import org.apache.commons.io.FileUtils;
+import com.opensymphony.xwork2.ActionSupport;
+
+public class fileUploadAction extends ActionSupport {
+
+	private File upload;
+	private String uploadContentType;
+	private String uploadFileName;
+	private String fileUploadPath = "C:\\Java\\upload\\";
+
+	public String upload() throws Exception {
+
+		//① FileUtils의 copyFile() 메소드 시작
+		File destFile = new File(fileUploadPath + getUploadFileName());
+		FileUtils.copyFile(getUpload(), destFile);
+		//① FileUtils의 copyFile() 메소드 끝
+
+		// 또는
+
+		//② FileInputStream, FileOutputStream 시작
+		FileInputStream inputStream = new FileInputStream(upload);
+    		FileOutputStream outputStream = 
+	            new FileOutputStream(fileUploadPath + getUploadFileName());
+    		int bytesRead = 0;
+	    	byte[] buffer = new byte[1024];
+	    	while ((bytesRead = inputStream.read(buffer,0,1024))!=-1){
+    			outputStream.write(buffer, 0, bytesRead);			
+    		}
+	    	outputStream.close();
+    		inputStream.close();
+		//② FileInputStream, FileOutputStream 끝
+
+		return SUCCESS;
+	}
+
+	public File getUpload() {
+		return upload;
+	}
+
+	public void setUpload(File upload) {
+		this.upload = upload;
+	}
+
+	public String getUploadContentType() {
+		return uploadContentType;
+	}
+
+	public void setUploadContentType(String uploadContentType) {
+		this.uploadContentType = uploadContentType;
+	}
+
+	public String getUploadFileName() {
+		return uploadFileName;
+	}
+
+	public void setUploadFileName(String uploadFileName) {
+		this.uploadFileName = uploadFileName;
+	}
+
+	public String getFileUploadPath() {
+		return fileUploadPath;
+	}
+
+	public void setFileUploadPath(String fileUploadPath) {
+		this.fileUploadPath = fileUploadPath;
+	}
+}
+
+===================================================
+
+3.다중 파일 업로드
+ : 리스트를 이용
+ : 배열을 이용
+
+*리스트를 이용
+[struts.xml]
+<package name="file2" extends="struts-default">
+	<action name="multiUploadListForm">
+		<result>/upload/multiUploadList.jsp</result>
+	</action>
+
+	<action name="multiUploadListAction" class="file.multiUploadListAction" method="upload">
+		<result>/upload/multiUploadListOK.jsp</result>
+	</action>
+</package>
+
+[multiUploadListAction.java]
+package file;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.commons.io.FileUtils;
+
+import com.opensymphony.xwork2.ActionSupport;
+
+public class multiUploadListAction extends ActionSupport {
+
+	private List<File> uploads = new ArrayList<File>();
+	private List<String> uploadsFileName = new ArrayList<String>();
+	private List<String> uploadsContentType = new ArrayList<String>();
+	private String fileUploadPath = "C:\\Java\\upload\\";
+
+	public String upload() throws Exception {
+
+		for (int i = 0; i < uploads.size(); i++) {
+			File destFile = new File(fileUploadPath
+					+ getUploadsFileName().get(i));
+			
+			FileUtils.copyFile(getUploads().get(i), destFile);
+		}
+
+		return SUCCESS;
+	}
+
+	public List<File> getUploads() {
+		return uploads;
+	}
+
+	public void setUploads(List<File> uploads) {
+		this.uploads = uploads;
+	}
+
+	public List<String> getUploadsFileName() {
+		return uploadsFileName;
+	}
+
+	public void setUploadsFileName(List<String> uploadsFileName) {
+		this.uploadsFileName = uploadsFileName;
+	}
+
+	public List<String> getUploadsContentType() {
+		return uploadsContentType;
+	}
+
+	public void setUploadsContentType(List<String> uploadsContentType) {
+		this.uploadsContentType = uploadsContentType;
+	}
+	
+	public String getFileUploadPath() {
+		return fileUploadPath;
+	}
+
+	public void setFileUploadPath(String fileUploadPath) {
+		this.fileUploadPath = fileUploadPath;
+	}
+}
+
+[multiUploadList.java]
+<%@ page language="java" contentType="text/html; charset=UTF-8" %>
+<%@ taglib prefix="s" uri="/struts-tags" %>
+
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>파일 업로드</title>
+</head>
+
+<body>
+	<h2>다중 파일 업로드 입력 폼 (리스트)</h2>
+
+	<s:form action="multiUploadListAction" method="POST" enctype="multipart/form-data">
+		<s:file label="File (1)" name="uploads" />
+		<s:file label="File (2)" name="uploads" />
+		<s:file label="FIle (3)" name="uploads" />
+		<s:submit />
+	</s:form>
+
+</body>
+</html>
+
+[multiUploadListOK.jsp]
+<%@ page language="java" contentType="text/html; charset=UTF-8" %>
+<%@ taglib prefix="s" uri="/struts-tags" %>
+
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>파일 업로드</title>
+</head>
+
+<body>
+
+	<h2>다중 파일 업로드 입력 완료 (리스트)</h2>
+
+	<table border="1">
+	<s:iterator value="uploads" status="stat">
+	<tr>
+		<td>File <s:property value="%{#stat.index}" /></td>
+		<td><s:property value="%{uploads[#stat.index]}" /></td>
+	</tr>
+	</s:iterator>
+	</table>
+	
+	<br>
+	
+	<table border="1">
+	<s:iterator value="uploadsFileName" status="stat">
+	<tr>
+		<td>File Name <s:property value="%{#stat.index}" /></td>
+		<td><s:property value="%{uploadsFileName[#stat.index]}" /></td>
+	</tr>	
+	</s:iterator>
+	</table>
+	
+	<br>
+	
+	<table border="1">
+	<s:iterator value="uploadsContentType" status="stat">
+	<tr>
+		<td>Content Type <s:property value="%{#stat.index}" /></td>
+		<td><s:property value="%{uploadsContentType[#stat.index]}" /></td>
+	</tr>
+	</s:iterator>
+	</table>
+
+</body>
+</html>
+
+*배열을 이용
+[struts.xml]
+<package name="file3" extends="struts-default">
+	<action name="multiUploadArrayForm">
+		<result>/upload/multiUploadArray.jsp</result>
+	</action>
+
+	<action name="multiUploadArrayAction" class="file.multiUploadArrayAction" method="upload">
+		<result>/upload/multiUploadArrayOK.jsp</result>
+	</action>
+</package>
+ 
+[multiUploadArrayAction.java]
+package file;
+
+import java.io.File;
+
+import org.apache.commons.io.FileUtils;
+
+import com.opensymphony.xwork2.ActionSupport;
+
+public class multiUploadArrayAction extends ActionSupport {
+
+	private File[] uploads;
+	private String[] uploadsFileName;
+	private String[] uploadsContentType;
+	private String fileUploadPath = "C:\\Java\\upload\\";
+
+	public String upload() throws Exception {
+
+		for (int i = 0; i < uploads.length; i++) {
+			File destFile = new File(fileUploadPath + getUploadsFileName()[i]);
+			FileUtils.copyFile(getUploads()[i], destFile);
+		}
+		
+		return SUCCESS;
+	}
+
+	public File[] getUploads() {
+		return uploads;
+	}
+
+	public void setUploads(File[] uploads) {
+		this.uploads = uploads;
+	}
+
+	public String[] getUploadsFileName() {
+		return uploadsFileName;
+	}
+
+	public void setUploadsFileName(String[] uploadsFileName) {
+		this.uploadsFileName = uploadsFileName;
+	}
+
+	public String[] getUploadsContentType() {
+		return uploadsContentType;
+	}
+
+	public void setUploadsContentType(String[] uploadsContentType) {
+		this.uploadsContentType = uploadsContentType;
+	}
+
+	public String getFileUploadPath() {
+		return fileUploadPath;
+	}
+
+	public void setFileUploadPath(String fileUploadPath) {
+		this.fileUploadPath = fileUploadPath;
+	}
+
+}
+
+[multiUploadArray.jsp]
+<%@ page language="java" contentType="text/html; charset=UTF-8" %>
+<%@ taglib prefix="s" uri="/struts-tags" %>
+
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>파일 업로드</title>
+</head>
+
+<body>
+<h2>다중 파일 업로드 입력 폼 (배열)</h2>
+
+<s:form action="multiUploadArrayAction" method="POST" enctype="multipart/form-data">
+	<s:file label="File (1)" name="uploads" />
+	<s:file label="File (2)" name="uploads" />
+	<s:file label="FIle (3)" name="uploads" />
+	<s:submit />
+</s:form>
+
+</body>
+</html>
+
+[multiUploadArrayOK.jsp]
+<%@ page language="java" contentType="text/html; charset=UTF-8" %>
+<%@ taglib prefix="s" uri="/struts-tags" %>
+	
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml"> 
+<head>
+    <title>파일 업로드</title>
+</head>
+
+<body>
+
+	<h2>다중 파일 업로드 입력 완료 (배열)</h2>
+	
+	<table border="1">
+	<s:iterator value="uploads" status="stat">
+	<tr>
+		<td>File <s:property value="%{#stat.index}" /></td>
+		<td><s:property value="%{uploads[#stat.index]}" /></td>
+	</tr>
+	</s:iterator>
+	</table>
+	
+	<br>
+	
+	<table border="1">
+	<s:iterator value="uploadsFileName" status="stat">
+	<tr>
+		<td>File Name <s:property value="%{#stat.index}" /></td>
+		<td><s:property value="%{uploadsFileName[#stat.index]}" /></td>
+	</tr>	
+	</s:iterator>
+	</table>
+	
+	<br>
+	
+	<table border="1">
+	<s:iterator value="uploadsContentType" status="stat">
+	<tr>
+		<td>Content Type <s:property value="%{#stat.index}" /></td>
+		<td><s:property value="%{uploadsContentType[#stat.index]}" /></td>
+	</tr>
+	</s:iterator>
+	</table>
+
+</body>
+</html>
+
+=====================================================
+
+4.다운로드
+[struts.xml]
+<package name="file4" extends="struts-default">
+	<action name="fileDownloadForm" class="file.fileDownloadAction">
+		    <result>/upload/fileDownload.jsp</result>
+	</action>		
+		
+	<action name="fileDownloadAction" class="file.fileDownloadAction">
+		<result name="success" type="stream">
+			<param name="contentType">binary/octet-stream</param>
+		        <param name="inputName">inputStream</param>
+		        <param name="contentDisposition">${contentDisposition}</param>
+		         <param name="contentLength">${contentLength}</param> 
+		         <param name="bufferSize">4096</param>
+            	</result>
+	</action>	
+</package>
+
+[fileDownloadAction.java]
+package file;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.net.URLEncoder;
+
+import com.opensymphony.xwork2.ActionSupport;
+
+public class fileDownloadAction extends ActionSupport {
+
+	private InputStream inputStream;
+	private String contentDisposition;
+	private long contentLength;
+
+	private String fileDownloadPath = "C:\\Java\\upload\\";
+	private String fileDownloadName = "testCode.txt";
+
+	public String execute() throws Exception {
+
+		File fileInfo = new File(fileDownloadPath + fileDownloadName);
+
+		setContentLength(fileInfo.length());
+		setContentDisposition("attachment;filename="
+				+ URLEncoder.encode(fileDownloadName, "UTF-8"));
+		setInputStream(new FileInputStream(fileDownloadPath + fileDownloadName));
+
+		return SUCCESS;
+	}
+
+	public InputStream getInputStream() {
+		return inputStream;
+	}
+
+	public void setInputStream(InputStream inputStream) {
+		this.inputStream = inputStream;
+	}
+
+	public String getContentDisposition() {
+		return contentDisposition;
+	}
+
+	public void setContentDisposition(String contentDisposition) {
+		this.contentDisposition = contentDisposition;
+	}
+
+	public long getContentLength() {
+		return contentLength;
+	}
+
+	public void setContentLength(long contentLength) {
+		this.contentLength = contentLength;
+	}
+
+	public String getFileDownloadPath() {
+		return fileDownloadPath;
+	}
+
+	public void setFileDownloadPath(String fileDownloadPath) {
+		this.fileDownloadPath = fileDownloadPath;
+	}
+
+	public String getFileDownloadName() {
+		return fileDownloadName;
+	}
+
+	public void setFileDownloadName(String fileDownloadName) {
+		this.fileDownloadName = fileDownloadName;
+	}
+}
+
+[fileDownload.jsp]
+<%@ page language="java" contentType="text/html; charset=UTF-8" %>
+<%@ taglib prefix="s" uri="/struts-tags" %>
+
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>파일 업로드</title>
+</head>
+
+<body>
+  <h2>파일 다운로드 폼</h2>
+
+	<s:url id="download" action="fileDownloadAction"/>
+	
+	<s:a href="%{download}"><s:property value="fileDownloadName" /></s:a> 
+	
+</body>
+</html>
+
+http://localhost:8080/StrutsUp/fileDownloadForm.action
+
+5.Ajax를 이용한 비동기 파일 업로드/다운로드
+[struts.xml]
+<package name="file5" extends="struts-default">
+	<action name="asyncUploadForm">
+		<result>/upload/asyncUploadForm.jsp</result>
+	</action>
+		
+	<action name="asyncUploadAction" class="file.asyncFileAction" method="upload">
+		<result>/upload/asyncUploadList.jsp</result>			
+	</action>
+		
+	<action name="asyncUploadList" class="file.asyncFileAction" method="uploadList">
+		<result>/upload/asyncUploadList.jsp</result>
+	</action>
+
+	<action name="asyncDownloadAction" class="file.asyncFileAction" method="download">
+    		<result name="success" type="stream">
+                	<param name="contentType">binary/octet-stream</param>
+                	<param name="inputName">inputStream</param>
+                	<param name="contentDisposition">${contentDisposition}</param>
+                	<param name="contentLength">${contentLength}</param> 
+                	<param name="bufferSize">4096</param>
+		</result>
+    	</action>
+</package>
+
+[asyncFileAction.java]
+package file;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.commons.io.FileUtils;
+
+import com.opensymphony.xwork2.ActionSupport;
+
+public class asyncFileAction extends ActionSupport {
+
+	private File[] uploads;
+	private String[] uploadsFileName;
+	private String[] uploadsContentType;
+	
+	private InputStream inputStream;
+	private String contentDisposition;
+	private long contentLength;
+	private String fileDownloadName;
+
+	private List<File> listFile = new ArrayList<File>();
+	
+	private String fileUploadPath = "C:\\Java\\upload\\";
+
+	public String uploadList() throws Exception {
+		File path = new File(fileUploadPath);
+		File[] fileArray = path.listFiles();
+
+		if (fileArray != null) {
+			for (File f : fileArray) {
+				if (f.isFile()) {
+					listFile.add(f);
+				}
+			}
+		}
+
+		return SUCCESS;
+	}
+
+	public String upload() throws Exception {
+
+		for (int i = 0; i < uploads.length; i++) {
+			File destFile = new File(fileUploadPath + getUploadsFileName()[i]);
+			FileUtils.copyFile(getUploads()[i], destFile);
+		}
+
+		return SUCCESS;
+	}
+
+	public String download() throws Exception {
+
+		File fileInfo = new File(fileUploadPath + fileDownloadName);
+
+		setContentLength(fileInfo.length());
+		setContentDisposition("attachment;filename="
+				+ URLEncoder.encode(fileDownloadName, "UTF-8"));
+		setInputStream(new FileInputStream(fileUploadPath + fileDownloadName));
+
+		return SUCCESS;
+	}
+
+	public File[] getUploads() {
+		return uploads;
+	}
+
+	public void setUploads(File[] uploads) {
+		this.uploads = uploads;
+	}
+
+	public String[] getUploadsFileName() {
+		return uploadsFileName;
+	}
+
+	public void setUploadsFileName(String[] uploadsFileName) {
+		this.uploadsFileName = uploadsFileName;
+	}
+
+	public String[] getUploadsContentType() {
+		return uploadsContentType;
+	}
+
+	public void setUploadsContentType(String[] uploadsContentType) {
+		this.uploadsContentType = uploadsContentType;
+	}
+
+	public List<File> getListFile() {
+		return listFile;
+	}
+
+	public void setListFile(List<File> listFile) {
+		this.listFile = listFile;
+	}
+
+	public String getFileUploadPath() {
+		return fileUploadPath;
+	}
+
+	public void setFileUploadPath(String fileUploadPath) {
+		this.fileUploadPath = fileUploadPath;
+	}
+
+	public InputStream getInputStream() {
+		return inputStream;
+	}
+
+	public void setInputStream(InputStream inputStream) {
+		this.inputStream = inputStream;
+	}
+
+	public String getContentDisposition() {
+		return contentDisposition;
+	}
+
+	public void setContentDisposition(String contentDisposition) {
+		this.contentDisposition = contentDisposition;
+	}
+
+	public long getContentLength() {
+		return contentLength;
+	}
+
+	public void setContentLength(long contentLength) {
+		this.contentLength = contentLength;
+	}
+
+	public String getFileDownloadName() {
+		return fileDownloadName;
+	}
+
+	public void setFileDownloadName(String fileDownloadName) {
+		this.fileDownloadName = fileDownloadName;
+	}
+
+}
+
+[asyncUploadForm.jsp]
+<%@ page language="java" contentType="text/html; charset=UTF-8" %>
+<%@ taglib prefix="s" uri="/struts-tags" %>
+
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>비동기 파일 업로드</title>
+    <s:head theme="ajax"/>
+    
+    <script type="text/javascript">
+		dojo.event.topic.subscribe("/after", function(data, request, widget){
+    
+    var div = dojo.byId("uploadComplete");
+		div.innerHTML="File Upload Complete!";
+
+});
+</script>   
+
+</head>
+
+<body>
+<h2>Ajax를 이용한 비동기 파일 업로드 입력 폼</h2>
+
+<s:form action="asyncUploadAction" method="POST" enctype="multipart/form-data">
+	<s:file label="File (1)" name="uploads" />
+	<s:file label="File (2)" name="uploads" />
+	<s:file label="FIle (3)" name="uploads" />
+	<s:submit theme="ajax" notifyTopics="/after" />
+</s:form>
+
+<s:div id="uploadComplete" theme="ajax" loadingText="wait..." ></s:div>
+
+</p>
+
+<s:url id="asyncList" value="/asyncUploadList.action" />
+<s:a theme="ajax" href="%{asyncList}" targets="uploadlist">현재까지 업로드한 파일 가져오기</s:a>
+
+</p>
+
+<fieldset> 
+<legend>업로드 파일 리스트</legend> 
+  <s:div id="uploadlist" theme="ajax" loadingText="Loading..." >
+  	이 곳에 업로드한 파일의 리스트가 출력됩니다.
+  </s:div>
+</fieldset> 
+
+
+
+</body>
+</html>
+
+[asyncUploadList.jsp]
+<%@ page language="java" contentType="text/html; charset=UTF-8" %>
+<%@ taglib prefix="s" uri="/struts-tags" %>
+
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>비동기 파일 업로드</title>
+</head>
+
+<body>
+
+<table border="0" cellpadding="10" cellspacing="0">
+	
+	<s:iterator value="listFile" status="stat"> 
+   
+    		<s:url id="download" action="asyncDownloadAction">
+			<s:param name="fileUploadPath" value="fileUploadPath" />
+			<s:param name="fileDownloadName">
+				<s:property value="listFile[#stat.index].name" />
+			</s:param>
+			</s:url>
+		
+		<tr>
+			<td>
+				<s:a href="%{download}"><s:property value="listFile[#stat.index].name" /></s:a>
+			</td>
+		</tr>
+
+	</s:iterator>	
+		
+</table>
+
+</body>
+</html>
+
+
