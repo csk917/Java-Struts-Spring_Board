@@ -202,10 +202,100 @@ public class LoggerInterceptor extends HandlerInterceptorAdapter {
 
 
 ===============================
+  boardList.jsp
   
-  
-  
-  
+     <c:choose>
+                <c:when test="${fn:length(list) > 0}">
+                    <c:forEach items="${list }" var="row">
+                        <tr>
+                            <td>${row.IDX }</td>
+                            <td class="title">
+                                <a href="#this" name="title">${row.TITLE }</a>
+                                <input type="hidden" id="IDX" value="${row.IDX }">
+                            </td>
+                            <td>${row.HIT_CNT }</td>
+                            <td>${row.CREA_DTM }</td>
+                        </tr>
+                    </c:forEach>
+                </c:when>
+                <c:otherwise>
+                    <tr>
+                        <td colspan="4">조회된 결과가 없습니다.</td>
+                    </tr>
+                </c:otherwise>
+    </c:choose>
+    
+    -JSTL 컨트롤러에서 저장한 list 출력. 
+    
+ ==============================================
+ 
+ sampleServiceImpl
+ 
+  @Service("sampleService") //자동 객체 생성되어서 스프링 컨테이너에 등록. 
+public class SampleServiceImpl implements SampleService{ //등록 시켜주는 ID까지도 위에 가로에 설정.
+	Logger log = Logger.getLogger(this.getClass());
+	
+	@Resource(name="sampleDAO")
+	private SampleDAO sampleDAO;
+	
+	@Override
+	public List<Map<String, Object>> selectBoardList(Map<String, Object> map) throws Exception {
+		return sampleDAO.selectBoardList(map);
+		
+	}
+
+-Controller가 데이터를 끌어내야하는데 이걸 sampleService 외주 -- sampleDao에게 또 외주
+
+===============================================
+
+[SampleDAO]
+package first.sample.dao;
+
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.stereotype.Repository;
+
+import first.common.dao.AbstractDAO;
+
+@Repository("sampleDAO")
+public class SampleDAO extends AbstractDAO{
+
+	@SuppressWarnings("unchecked")
+	public List<Map<String, Object>> selectBoardList(Map<String, Object> map) throws Exception{
+		return (List<Map<String, Object>>)selectList("sample.selectBoardList", map);
+	}
+
+	public void insertBoard(Map<String, Object> map) throws Exception{
+		insert("sample.insertBoard", map);
+	}
+
+	public void updateHitCnt(Map<String, Object> map) throws Exception{
+		update("sample.updateHitCnt", map);
+	}
+
+	@SuppressWarnings("unchecked")
+	public Map<String, Object> selectBoardDetail(Map<String, Object> map) throws Exception{
+		return (Map<String, Object>) selectOne("sample.selectBoardDetail", map);
+	}
+
+	public void updateBoard(Map<String, Object> map) throws Exception{
+		update("sample.updateBoard", map);
+	}
+
+	public void deleteBoard(Map<String, Object> map) throws Exception{
+		update("sample.deleteBoard", map);
+	}
+}
+
+-쿼리문 정리, 디테일하게 포장하는 작업
+-abstractDAO 상속
+
+==================================
+
+sample_SQL.xml
+sql작업
+
   
   
   
