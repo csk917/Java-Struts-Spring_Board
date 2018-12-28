@@ -1,4 +1,4 @@
-흔한 개발자 10번 읽고 분석 만들기!!!
+흔한 개발자 10번 읽고 분석 만들기!!! 9,10,11 마스터!!!
 
 
 CREATE TABLE TB_BOARD
@@ -296,6 +296,33 @@ public class SampleDAO extends AbstractDAO{
 sample_SQL.xml
 sql작업
 
+hashMap 사용 작업
+  
+  <update id="updateHitCnt" parameterType="hashmap">
+		<![CDATA[
+			UPDATE TB_BOARD 
+			SET
+				HIT_CNT = NVL(HIT_CNT, 0) + 1
+			WHERE
+				IDX = #{IDX}	
+		]]>
+  </update>
+  
+  -HIT_CNT,0 - 0||null 이면 NVL() 이용해서 +1로 처리해라
+  
+  <update id="deleteBoard" parameterType="hashmap">
+		<![CDATA[
+			UPDATE TB_BOARD
+			SET
+				DEL_GB = 'Y'
+			WHERE
+				IDX = #{IDX}
+		]]>
+  </update>
+  
+  -DEL_GB 'Y' 데이터 삭제로 변경 
+  
+  ======================================
   
   
   
