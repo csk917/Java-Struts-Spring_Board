@@ -1,0 +1,223 @@
+흔한 개발자 10번 읽고 분석 만들기!!!
+
+
+CREATE TABLE TB_BOARD
+(
+    IDX NUMBER PRIMARY KEY,
+    PARENT_IDX NUMBER,
+    TITLE VARCHAR2(100) NOT NULL,
+    CONTENTS VARCHAR2(4000) NOT NULL,
+    HIT_CNT NUMBER NOT NULL,
+    DEL_GB VARCHAR2(1) DEFAULT 'N' NOT NULL,
+    CREA_DTM DATE DEFAULT SYSDATE NOT NULL,
+    CREA_ID VARCHAR2(30) NOT NULL
+);
+  
+COMMENT ON TABLE TB_BOARD IS '게시판';
+COMMENT ON COLUMN TB_BOARD.IDX IS '인덱스';
+COMMENT ON COLUMN TB_BOARD.PARENT_IDX IS '부모글 인덱스';
+COMMENT ON COLUMN TB_BOARD.TITLE IS '제목';
+COMMENT ON COLUMN TB_BOARD.CONTENTS IS '내용';
+COMMENT ON COLUMN TB_BOARD.HIT_CNT IS '조회수';
+COMMENT ON COLUMN TB_BOARD.DEL_GB IS '삭제구분';
+COMMENT ON COLUMN TB_BOARD.CREA_DTM IS '생성일자';
+COMMENT ON COLUMN TB_BOARD.CREA_ID IS '생성자 ID';
+
+>>테이블
+  DEL_GB   'N' 삭제 X , 'Y' 삭제 (삭제 쿼리 대신 사용)
+  컬럼/테이블에 대한 주석 넣기 Comment on
+  
+  ====================================
+  pom.xml -ojdbc, spring 설정 필수, webmvc, aop, beans, context, tx=transaction, 
+  mybatis, tomcat-dbcp=connection pool, aspectj=aop관련 처리, jsp, jstl, jackson 등등. 
+  
+  <repository>
+			<id>egovframe</id>
+			<url>http://www.egovframe.go.kr/maven/</url>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+    
+    우리 나라 전자정보 프레임워크
+  ======================================
+  
+  기본 폴터 및 패키지 설정 - .xml 파일 위치 등. 
+  필터, 리스너, 읽을 패턴 설정. 
+
+<context-param>
+        <param-name>contextConfigLocation</param-name>
+        <param-value>classpath*:config/spring/context-*.xml</param-value>
+</context-param>
+
+<context:component-scan base-package="first"></context:component-scan>
+- 작업하는 base package에는 first를 붙여서 @붙은 건 객체 생성해서 등록한다. 
+  
+  =========================================
+  
+  <mvc:annotation-driven>
+		<mvc:argument-resolvers>
+			<bean class="first.common.resolver.CustomMapArgumentResolver"></bean>		
+		</mvc:argument-resolvers>
+	</mvc:annotation-driven>
+  
+ -자바빈 사용 안하고 맵으로 설정해서 mybatis와 연동해서 전달 및 응답. 
+ 일반 hashMap XX
+ 
+ ==========================================
+
+<mvc:interceptors>
+		<mvc:interceptor>
+			<mvc:mapping path="/**"/>
+			<bean id="loggerInterceptor" class="first.common.logger.LoggerInterceptor"></bean>
+		</mvc:interceptor>
+</mvc:interceptors>
+  
+-모든 요청에 대한 Logging. 테이블 표시가 console에서 가능
+
+=============================================
+
+  <bean id="dataSourceSpied" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+        <property name="driverClassName" value="oracle.jdbc.driver.OracleDriver"/>
+        <property name="url" value="jdbc:oracle:thin:@istudy.iptime.org:7000:ORCL" />
+	<property name="username" value="KH21" />
+	<property name="password" value="oracle" />
+    </bean>
+    
+-데이터 소스 설정 파일
+-JDBC 프록시 log찍으면서 작업. 
+-프로젝트에 값 오류 찾는 기능- logger
+
+	<bean id="sqlSession" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<property name="mapperLocations" value="classpath:/mapper/**/*_SQL.xml" />
+	</bean>
+	
+  **사이에 뭐든 항관없
+  *여기로시작해서 _SQL로 끝난다. 
+  
+  HandlerMethodArgumentResolver
+    -세션에 정보를 담고 추가하면서 사용하는데...
+    -사용자 요청이 Controller에 오기 전에 요청에 대한 파라미터를 수정할 수 있게 해준다.
+  
+ ===========================================
+ 
+  public class CommandMap {
+    Map<String,Object> map = new HashMap<String,Object>();
+     
+    public Object get(String key){
+        return map.get(key);
+    }
+     
+    public void put(String key, Object value){
+        map.put(key, value);
+    }
+     
+    public Object remove(String key){
+        return map.remove(key);
+    }
+    
+  commandMap
+    -Map 객체 선언해서 값을 사용. 
+    -이걸로 전송된 거 받는 거 전부 처리한다. 빈 대신 사용하는 임시 저장소. 
+    -customMapArgumentResolver 필요 이걸로 맵으로 받아주는 설정을 한다. 
+    
+    
+  public class CustomMapArgumentResolver implements HandlerMethodArgumentResolver{
+	@Override
+	public boolean supportsParameter(MethodParameter parameter) {
+		return CommandMap.class.isAssignableFrom(parameter.getParameterType());
+	}
+
+============
+
+	@Override
+	public Object resolveArgument(MethodParameter parameter, ModelAndViewContainer mavContainer, NativeWebRequest webRequest, WebDataBinderFactory binderFactory) throws Exception {
+		CommandMap commandMap = new CommandMap();
+		
+		HttpServletRequest request = (HttpServletRequest) webRequest.getNativeRequest();
+		Enumeration<?> enumeration = request.getParameterNames();
+		
+		String key = null;
+		String[] values = null;
+		while(enumeration.hasMoreElements()){
+			key = (String) enumeration.nextElement();
+			values = request.getParameterValues(key);
+			if(values != null){
+				commandMap.put(key, (values.length > 1) ? values:values[0] );
+			}
+		}
+		return commandMap;
+	}
+}
+
+-사용하기 위한 설정
+-반복으로 다 꺼내와서 commandMap에 넣기
+-전송된 argument에 대한 resolver 설정하는 것
+-담을 장바구니 하나에 전부 담을 수 있다. 장버구니 여러 개 생성 X 단 Validation 자바 클래스 사용 불가 >>
+그래서 Validation을 자바스크립트로 대신 처리. 
+
+================
+
+
+ [LoggerInterceptor]
+package first.common.logger;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
+
+import first.common.logger.LoggerInterceptor;
+
+public class LoggerInterceptor extends HandlerInterceptorAdapter {
+	protected Log log = LogFactory.getLog(LoggerInterceptor.class);
+	
+	@Override
+	public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+		if (log.isDebugEnabled()) {
+			log.debug("======================================          START         ======================================");
+			log.debug(" Request URI \t:  " + request.getRequestURI());
+		}
+		return super.preHandle(request, response, handler);
+	}
+	
+	@Override
+	public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
+		if (log.isDebugEnabled()) {
+			log.debug("======================================           END          ======================================\n");
+		}
+	}
+}
+
+-HandlerInterceptor 상속받고.
+-preHandler Controller 처리 전에 제시 요청했는지 또는 하는 내용 받기
+-postHandler Controller 정상적으로 처리되었다. 
+
+
+===============================
+  
+  
+  
+  
+  
+  
+  
+  
+
+
+
+
+
+
+ 
+  
+  
+  
+  
